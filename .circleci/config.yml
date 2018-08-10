@@ -1,0 +1,63 @@
+aliases:
+    - &restore_gem_cache
+        keys: 
+            - v1-gemfile-{{ checksum "Gemfile.lock" }}
+
+    - &save_gem_cache
+        name: Saving gem cache
+        key: v1-gemfile-{{ checksum "Gemfile.lock" }}
+        paths: 
+            - vendor/bundle
+    
+    - &bundle_install
+        name: Install Gems
+        command: bundle install --path=vendor/bundle --jobs=4 --retry=3
+
+    - &store_test_results
+        path: ~/cucumber
+    
+    - &store_test_artifacts
+        path: ~/cucumber
+    
+    - &cucumber
+        name: Run Cucumber Tests
+        no_output_timeout: 30m
+        command: |
+            bundle exec cucumber --retry 2 --format pretty --format json --out $STORAGE_PATH/results.json
+        when: always
+    
+    - &sync_cucumber_pro
+        name: Sync Cucumber Pro
+        command: |
+          mask='password|key|token'
+          revision=$CIRCLE_BRANCH
+          env | \
+              grep --extended-regexp --ignore-case --invert-match "^.*(${mask}).*=" | \
+              curl \
+                --fail \
+                --request POST \
+                --form env=@- \
+                --form "profileName=$PROFILE_NAME" \
+                --form "payload=@$RESULTS_PATH;type=application/x.cucumber.rb.results+json" \
+                "https://68a68023dbd939d897ffdcc1f52706fb16e@app.cucumber.pro/tests/results/getting-started-with-cucumber-pro/$revision"
+        when: always
+
+version: 2
+jobs:
+  build:
+    docker:
+      - image: ruby:2.4
+    environment:
+      PROFILE_NAME: default
+      RESULTS_PATH: ~/cucumber/results.json
+      STORAGE_PATH: ~/cucumber
+    steps:
+      - checkout
+      - restore_cache: *restore_gem_cache
+      - run: *bundle_install
+      - save_cache: *save_gem_cache
+      - run: mkdir -p $STORAGE_PATH
+      - run: *cucumber
+      - store_test_results: *store_test_results
+      - store_artifacts: *store_test_artifacts
+      - run: *sync_cucumber_pro
