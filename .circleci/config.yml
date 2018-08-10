@@ -57,6 +57,6 @@ jobs:
       - save_cache: *save_gem_cache
       - run: mkdir -p $STORAGE_PATH
       - run: *cucumber
+      - run: *sync_cucumber_pro
       - store_test_results: *store_test_results
       - store_artifacts: *store_test_artifacts
-      - run: *sync_cucumber_pro
