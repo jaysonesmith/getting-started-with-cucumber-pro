@@ -7,24 +7,22 @@ aliases:
         name: Saving gem cache
         key: v1-gemfile-{{ checksum "Gemfile.lock" }}
         paths: 
-            - ~/ssai/vendor/bundle
+            - vendor/bundle
     
     - &bundle_install
         name: Install Gems
         command: bundle install --path=vendor/bundle --jobs=4 --retry=3
 
     - &store_test_results
-        path: $STORAGE_PATH
+        path: ~/cucumber
     
     - &store_test_artifacts
-        path: $STORAGE_PATH
+        path: ~/cucumber
     
     - &cucumber
         name: Run Cucumber Tests
         no_output_timeout: 30m
         command: |
-            export BOLT_ENV=$(echo ${BOLT_ENV:-qa})
-            mkdir -p $STORAGE_PATH
             bundle exec cucumber --retry 2 --format pretty --format json --out $STORAGE_PATH/results.json
         when: always
     
@@ -51,12 +49,13 @@ jobs:
     environment:
       PROFILE_NAME: default
       RESULTS_PATH: ~/cucumber/results.json
-      STORAGE_PATH: ~/cucumber 
+      STORAGE_PATH: ~/cucumber
     steps:
       - checkout
       - restore_cache: *restore_gem_cache
       - run: *bundle_install
       - save_cache: *save_gem_cache
+      - run: mkdir -p $STORAGE_PATH
       - run: *cucumber
       - store_test_results: *store_test_results
       - store_artifacts: *store_test_artifacts
