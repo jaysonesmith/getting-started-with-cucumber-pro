@@ -40,6 +40,7 @@ aliases:
                 --form "profileName=$PROFILE_NAME" \
                 --form "payload=@$RESULTS_PATH;type=application/x.cucumber.rb.results+json" \
                 "https://68a68023dbd939d897ffdcc1f52706fb16e@app.cucumber.pro/tests/results/getting-started-with-cucumber-pro/$revision"
+        when: always
 
 version: 2
 jobs:
@@ -57,6 +58,6 @@ jobs:
       - save_cache: *save_gem_cache
       - run: mkdir -p $STORAGE_PATH
       - run: *cucumber
-      - run: *sync_cucumber_pro
       - store_test_results: *store_test_results
       - store_artifacts: *store_test_artifacts
+      - run: *sync_cucumber_pro
